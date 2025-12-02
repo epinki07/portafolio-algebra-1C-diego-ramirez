@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><title>Calculadora de Álgebra Amigable</title><link href="../../css/style.css" rel="stylesheet"/></head><body class="actividad08"><a class="back-link" href="../../index.html">← Volver al portafolio</a>
+<div class="container">
+<h1>Calculadora de Álgebra</h1>
+<h2>Diego Ramirez Magaña 1-C</h2>
+<h3>Fundamentos de Álgebra <p>Jorge Javier Pedrozo, Tecnológico de Software</p>
+</h3>
+<div class="input-section">
+<div class="field-group">
+<label for="variables">Variables (separar por comas o saltos de línea):</label>
+<textarea id="variables" placeholder="Ejemplo: 
+costo, w1 = 1, w2 = 2, w3 = 3"></textarea>
+</div>
+<div class="field-group">
+<label for="equations">Ecuaciones (una por línea):</label>
+<textarea id="equations" placeholder="Ejemplo: 
+costo = w1*w2+w3 
+total = costo + 10"></textarea>
+</div>
+<button class="calculate-button" id="calculate-btn">Calcular</button>
+</div>
+<div class="result-section">
+<div class="info-card">
+<h3>Resultado:</h3>
+<div class="result-content" id="result">
+                    Ingresa las variables y ecuaciones para ver el resultado
+                </div>
+</div>
+</div>
+</div>
+<script>
+        class Calculator {
+            constructor() {
+                this.variablesInput = document.getElementById('variables');
+                this.equationsInput = document.getElementById('equations');
+                this.calculateButton = document.getElementById('calculate-btn');
+                this.resultDiv = document.getElementById('result');
+                this.init();
+            }
+
+            init() {
+                this.calculateButton.addEventListener('click', () => this.calculate());
+                this.variablesInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && e.ctrlKey) {
+                        e.preventDefault();
+                        this.calculate();
+                    }
+                });
+                this.equationsInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && e.ctrlKey) {
+                        e.preventDefault();
+                        this.calculate();
+                    }
+                });
+            }
+
+            formatNumberES(num) {
+                if (typeof num === 'number' && isFinite(num)) {
+                    return num.toLocaleString('es-ES', { maximumFractionDigits: 10 });
+                }
+                return num;
+            }
+
+            parseVariables(variablesText) {
+                const variables = {};
+                const lines = variablesText.split('\n').filter(line => line.trim());
+                for (const line of lines) {
+                    const trimmedLine = line.trim();
+                    if (!trimmedLine) continue;
+                    const parts = trimmedLine.split(',');
+                    for (const part of parts) {
+                        const trimmedPart = part.trim();
+                        if (!trimmedPart) continue;
+                        const assignmentMatch = trimmedPart.match(/^(\w+)\s*=\s*(.+)$/);
+                        if (assignmentMatch) {
+                            const [, varName, value] = assignmentMatch;
+                            try {
+                                variables[varName.trim()] = this.evaluateExpression(value.trim(), variables);
+                            } catch (error) {
+                                throw new Error(`Error al evaluar la variable "${varName}": ${error.message}`);
+                            }
+                        } else {
+                            const varName = trimmedPart.trim();
+                            if (varName && !variables.hasOwnProperty(varName)) {
+                                variables[varName] = 0;
+                            }
+                        }
+                    }
+                }
+                return variables;
+            }
+
+            evaluateExpression(expression, variables) {
+                let processedExpression = expression.replace(/\s+/g, '');
+                processedExpression = processedExpression.replace(/\^/g, '**');
+
+                processedExpression = processedExpression.replace(/(\d+)([a-zA-Z_]\w*)/g, '$1*$2');
+                processedExpression = processedExpression.replace(/(\d+)(\()/g, '$1*$2');
+                processedExpression = processedExpression.replace(/([a-zA-Z_]\w*)(\()/g, '$1*$2');
+                processedExpression = processedExpression.replace(/(\))(\d+)/g, '$1*$2');
+                processedExpression = processedExpression.replace(/(\))([a-zA-Z_]\w*)/g, '$1*$2');
+                processedExpression = processedExpression.replace(/(\))\s*(\()/g, '$1*$2');
+
+                const sortedVariables = Object.entries(variables).sort((a, b) => b[0].length - a[0].length);
+                for (const [varName, value] of sortedVariables) {
+                    const regex = new RegExp(`\\b${varName}\\b`, 'g');
+                    processedExpression = processedExpression.replace(regex, `(${value})`);
+                }
+
+                if (/[a-zA-Z_]/.test(processedExpression)) {
+                    const undefinedVars = processedExpression.match(/[a-zA-Z_]+/g);
+                    throw new Error(`Variables sin definir: ${undefinedVars.join(', ')}`);
+                }
+
+                try {
+                    return new Function('return ' + processedExpression)();
+                } catch (error) {
+                    throw new Error(`Error al evaluar la expresión: ${processedExpression}`);
+                }
+            }
+
+            calculate() {
+                try {
+                    const variablesText = this.variablesInput.value.trim();
+                    const equationsText = this.equationsInput.value.trim();
+
+                    if (!variablesText && !equationsText) {
+                        this.showResult('Por favor ingresa las variables y ecuaciones', 'error');
+                        return;
+                    }
+
+                    const variables = this.parseVariables(variablesText);
+                    const equations = equationsText.split('\n').filter(line => line.trim());
+                    const results = [];
+
+                    for (const equation of equations) {
+                        const trimmedEquation = equation.trim();
+                        if (!trimmedEquation) continue;
+                        const equationMatch = trimmedEquation.match(/^(\w+)\s*=\s*(.+)$/);
+                        if (equationMatch) {
+                            const [, resultVar, expression] = equationMatch;
+                            try {
+                                const result = this.evaluateExpression(expression, variables);
+                                variables[resultVar] = result;
+                                results.push(`${resultVar} = ${this.formatNumberES(result)}`);
+                            } catch (error) {
+                                throw new Error(`Error en ecuación "${trimmedEquation}": ${error.message}`);
+                            }
+                        } else {
+                            try {
+                                const result = this.evaluateExpression(trimmedEquation, variables);
+                                results.push(`${trimmedEquation} = ${this.formatNumberES(result)}`);
+                            } catch (error) {
+                                throw new Error(`Error al evaluar "${trimmedEquation}": ${error.message}`);
+                            }
+                        }
+                    }
+
+                    if (results.length === 0) {
+                        this.showResult('No se encontraron ecuaciones válidas para calcular', 'warning');
+                    } else {
+                        this.showResult(results.join('\n'), 'success');
+                    }
+                } catch (error) {
+                    this.showResult(`Error: ${error.message}`, 'error');
+                }
+            }
+
+            showResult(message, type = 'success') {
+                this.resultDiv.textContent = message;
+                this.resultDiv.classList.remove('result-success', 'result-error', 'result-warning');
+                this.resultDiv.classList.add(`result-${type}`);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            new Calculator();
+        });
+    </script>
+</body></html>

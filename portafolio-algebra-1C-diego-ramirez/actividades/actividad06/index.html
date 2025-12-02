@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><title>Calculadora de Expresiones</title><link href="../../css/style.css" rel="stylesheet"/></head><body class="actividad06"><a class="back-link" href="../../index.html">← Volver al portafolio</a>
+<header>
+<h1>Calculadora de Expresiones</h1>
+<p class="subtitle">Convierte entre lenguaje natural y expresiones algebraicas</p>
+<p>Tecnologico del Software, Fundamentos de algebra, Profesor: Pedro Javier Pedrozo, Nombre del alumno: Diego
+            Ramirez Magaña 1C</p>
+</header>
+<main class="container">
+<div class="converter-grid">
+<div class="column natural-column">
+<h2>Lenguaje Natural</h2>
+<div class="input-group">
+<label for="natural-input">Escribe en palabras tu expresión matemática</label>
+<textarea id="natural-input" placeholder="Ejemplo: La suma de a y b" rows="5"></textarea>
+</div>
+<button class="convert-button" id="convert-to-algebraic-btn">
+                    Convertir a Expresión Algebraica
+                </button>
+<div class="result-section" id="natural-result" style="display: none;">
+<div class="result-content">
+<h4>Resultado:</h4>
+<div class="result-output" id="natural-output"></div>
+</div>
+<div class="evaluation-buttons">
+<button class="satisfactory-btn" id="natural-satisfactory-btn">
+                            Resultado Satisfactorio
+                        </button>
+<button class="improve-btn" id="natural-improve-btn">
+                            Necesita Mejora
+                        </button>
+<button class="add-pattern-btn" id="natural-add-pattern-btn">
+                            Agregar Patrón
+                        </button>
+</div>
+</div>
+</div>
+<div class="column algebraic-column">
+<h2>Expresión Algebraica</h2>
+<div class="input-group">
+<label for="algebraic-input">Escribe tu expresión matemática</label>
+<textarea id="algebraic-input" placeholder="Ejemplo: a^2 + b^2" rows="5"></textarea>
+</div>
+<button class="convert-button" id="convert-to-natural-btn">
+                    Convertir a Lenguaje Natural
+                </button>
+<div class="result-section" id="algebraic-result" style="display: none;">
+<div class="result-content">
+<h4>Resultado:</h4>
+<div class="result-output" id="algebraic-output"></div>
+</div>
+<div class="evaluation-buttons">
+<button class="satisfactory-btn" id="algebraic-satisfactory-btn">
+                            Resultado Satisfactorio
+                        </button>
+<button class="improve-btn" id="algebraic-improve-btn">
+                            Necesita Mejora
+                        </button>
+<button class="add-pattern-btn" id="algebraic-add-pattern-btn">
+                            Agregar Patrón
+                        </button>
+</div>
+</div>
+</div>
+</div>
+<section class="json-loader-section">
+<h2>Base de Datos de Patrones</h2>
+<div class="json-loader">
+<div class="file-input-wrapper">
+<input accept=".json" id="json-file-input" type="file"/>
+<label class="file-input-label" for="json-file-input">
+                        Cargar archivo JSON
+                    </label>
+<span class="file-name" id="file-name">Ningún archivo seleccionado</span>
+</div>
+<button class="load-button" disabled="" id="load-json-btn">
+                    Cargar Patrones
+                </button>
+<button class="reset-button" id="reset-json-btn">
+                    Usar Patrones por Defecto
+                </button>
+</div>
+</section>
+<section class="info-section">
+<h2>Información del Sistema</h2>
+<div class="info-cards">
+<div class="info-card">
+<h3>Patrones Cargados</h3>
+<div class="metric">
+<span class="metric-number" id="total-patterns">0</span>
+<span class="metric-label">expresiones disponibles</span>
+</div>
+</div>
+<div class="info-card">
+<h3>Archivo JSON</h3>
+<div class="metric">
+<span class="metric-number" id="file-size">0 KB</span>
+<span class="metric-label">tamaño del archivo</span>
+</div>
+</div>
+<div class="info-card">
+<h3>Conversiones</h3>
+<div class="metric">
+<span class="metric-number" id="conversions-count">0</span>
+<span class="metric-label">conversiones realizadas</span>
+</div>
+</div>
+<div class="info-card">
+<h3>Tasa de Satisfacción</h3>
+<div class="metric">
+<span class="metric-number" id="satisfaction-rate">0%</span>
+<span class="metric-label">conversiones satisfactorias</span>
+</div>
+</div>
+<div class="info-card">
+<h3>Última Actualización</h3>
+<div class="metric">
+<span class="metric-number" id="last-update">--</span>
+<span class="metric-label">patrones modificados</span>
+</div>
+</div>
+<div class="info-card">
+<h3>Complejidad Promedio</h3>
+<div class="metric">
+<span class="metric-number" id="avg-complexity">0</span>
+<span class="metric-label">palabras por expresión</span>
+</div>
+</div>
+</div>
+</section>
+<section class="history-section">
+<h2>Historial de Conversiones</h2>
+<div class="history-controls">
+<button class="clear-button" id="clear-history-btn">
+                    Limpiar Historial
+                </button>
+<button class="export-button" id="export-history-btn">
+                    Exportar Historial
+                </button>
+</div>
+<div class="history-list" id="conversion-history">
+<p class="no-history">No hay conversiones realizadas aún</p>
+</div>
+</section>
+</main>
+<footer>
+<p>Proyecto desarrollado para estudiantes del TSU en Desarrollo de Software y Negocios Digitales</p>
+<p>Tecnológico de Software - Primer Cuatrimestre 2025</p>
+</footer>
+<script>
+        // Variables globales
+        let patternsData = null;
+        let conversionHistory = [];
+        let stats = {
+            totalConversions: 0,
+            satisfactoryConversions: 0,
+            totalPatterns: 0,
+            fileSize: 0,
+            lastUpdate: null
+        };
+
+        // Patrones por defecto para comenzar
+        const defaultPatterns = {
+            "patterns": [
+                {
+                    "id": 1,
+                    "natural": "La suma de {var1} y {var2}",
+                    "algebraic": "{var1} + {var2}",
+                    "category": "operaciones_basicas"
+                },
+                {
+                    "id": 2,
+                    "natural": "La resta de {var1} y {var2}",
+                    "algebraic": "{var1} - {var2}",
+                    "category": "operaciones_basicas"
+                },
+                {
+                    "id": 3,
+                    "natural": "El producto de {var1} por {var2}",
+                    "algebraic": "{var1} × {var2}",
+                    "category": "operaciones_basicas"
+                },
+                {
+                    "id": 4,
+                    "natural": "El cociente de {var1} sobre {var2}",
+                    "algebraic": "{var1} ÷ {var2}",
+                    "category": "operaciones_basicas"
+                },
+                {
+                    "id": 5,
+                    "natural": "La suma de los cuadrados de {var1} y {var2}",
+                    "algebraic": "{var1}^2 + {var2}^2",
+                    "category": "combinadas"
+                }
+            ]
+        };
+
+        // Inicialización cuando se carga la página
+        document.addEventListener('DOMContentLoaded', function () {
+            // Cargar patrones por defecto
+            loadPatterns(defaultPatterns);
+
+            // Configurar event listeners
+            setupEventListeners();
+
+            // Actualizar métricas iniciales
+            updateMetrics();
+        });
+
+        // Configurar todos los event listeners
+        function setupEventListeners() {
+            // Botones de conversión
+            document.getElementById('convert-to-algebraic-btn').addEventListener('click', () => {
+                convertNaturalToAlgebraic();
+            });
+
+            document.getElementById('convert-to-natural-btn').addEventListener('click', () => {
+                convertAlgebraicToNatural();
+            });
+
+            // Botones de evaluación - Columna Natural
+            document.getElementById('natural-satisfactory-btn').addEventListener('click', () => {
+                markAsSatisfactory('natural');
+            });
+
+            document.getElementById('natural-improve-btn').addEventListener('click', () => {
+                markForImprovement('natural');
+            });
+
+            document.getElementById('natural-add-pattern-btn').addEventListener('click', () => {
+                showAddPatternDialog('natural');
+            });
+
+            // Botones de evaluación - Columna Algebraica
+            document.getElementById('algebraic-satisfactory-btn').addEventListener('click', () => {
+                markAsSatisfactory('algebraic');
+            });
+
+            document.getElementById('algebraic-improve-btn').addEventListener('click', () => {
+                markForImprovement('algebraic');
+            });
+
+            document.getElementById('algebraic-add-pattern-btn').addEventListener('click', () => {
+                showAddPatternDialog('algebraic');
+            });
+
+            // Manejo de archivos JSON
+            document.getElementById('json-file-input').addEventListener('change', handleFileSelection);
+            document.getElementById('load-json-btn').addEventListener('click', loadJSONFile);
+            document.getElementById('reset-json-btn').addEventListener('click', resetToDefault);
+
+            // Historial
+            document.getElementById('clear-history-btn').addEventListener('click', clearHistory);
+            document.getElementById('export-history-btn').addEventListener('click', exportHistory);
+        }
+
+        // Función para convertir lenguaje natural a algebraico
+        function convertNaturalToAlgebraic() {
+            const input = document.getElementById('natural-input').value.trim();
+            if (!input) {
+                alert('Por favor, ingresa una expresión en lenguaje natural');
+                return;
+            }
+
+            const result = processNaturalToAlgebraic(input);
+            displayResult('natural', input, result);
+
+            // Actualizar estadísticas
+            stats.totalConversions++;
+            addToHistory('natural-to-algebraic', input, result);
+            updateMetrics();
+        }
+
+        // Función para convertir algebraico a lenguaje natural
+        function convertAlgebraicToNatural() {
+            const input = document.getElementById('algebraic-input').value.trim();
+            if (!input) {
+                alert('Por favor, ingresa una expresión algebraica');
+                return;
+            }
+
+            const result = processAlgebraicToNatural(input);
+            displayResult('algebraic', input, result);
+
+            // Actualizar estadísticas
+            stats.totalConversions++;
+            addToHistory('algebraic-to-natural', input, result);
+            updateMetrics();
+        }
+
+        // Procesar conversión de natural a algebraico
+        function processNaturalToAlgebraic(input) {
+            if (!patternsData || !patternsData.patterns) {
+                return "Error: No hay patrones cargados";
+            }
+
+            const normalizedInput = input.toLowerCase();
+
+            // Buscar patrones que coincidan
+            for (let pattern of patternsData.patterns) {
+                const match = matchNaturalPattern(normalizedInput, pattern.natural);
+                if (match.isMatch) {
+                    return substituteVariables(pattern.algebraic, match.variables);
+                }
+            }
+
+            return "No se encontró un patrón coincidente. Considera agregar este caso a los patrones.";
+        }
+
+        // Procesar conversión de algebraico a natural
+        function processAlgebraicToNatural(input) {
+            if (!patternsData || !patternsData.patterns) {
+                return "Error: No hay patrones cargados";
+            }
+
+            const normalizedInput = normalizeAlgebraicExpression(input);
+
+            // Buscar patrones que coincidan
+            for (let pattern of patternsData.patterns) {
+                const match = matchAlgebraicPattern(normalizedInput, pattern.algebraic);
+                if (match.isMatch) {
+                    return substituteVariables(pattern.natural, match.variables);
+                }
+            }
+
+            return "No se encontró un patrón coincidente. Considera agregar este caso a los patrones.";
+        }
+
+        // Función para hacer coincidir patrones de lenguaje natural
+        function matchNaturalPattern(input, pattern) {
+            // Convertir patrón a regex
+            let regex = pattern.toLowerCase();
+            const variables = {};
+            let varCounter = 0;
+
+            // Reemplazar variables con grupos de captura
+            regex = regex.replace(/\{(\w+)\}/g, (match, varName) => {
+                variables[varName] = varCounter++;
+                return '([a-zA-Z0-9_]+)';
+            });
+
+            // Hacer que los espacios sean opcionales y flexibles
+            regex = regex.replace(/\s+/g, '\\s*');
+            regex = '^\\s*' + regex + '\\s*$';
+
+            const regexPattern = new RegExp(regex);
+            const match = input.match(regexPattern);
+
+            if (match) {
+                const extractedVars = {};
+                for (let [varName, index] of Object.entries(variables)) {
+                    extractedVars[varName] = match[index + 1];
+                }
+                return { isMatch: true, variables: extractedVars };
+            }
+
+            return { isMatch: false, variables: {} };
+        }
+
+        function matchAlgebraicPattern(input, pattern) {
+            let normalizedInput = normalizeAlgebraicExpression(input);
+            let normalizedPattern = normalizeAlgebraicExpression(pattern);
+
+            console.log('=== DEBUGGING MATCH ===');
+            console.log('Pattern original:', pattern);
+            console.log('Pattern normalizado:', normalizedPattern);
+            console.log('Input normalizado:', normalizedInput);
+
+            // Primero escapar caracteres especiales EXCEPTO las llaves
+            let regex = normalizedPattern.replace(/[\+\-\*\^]/g, '\\$&');
+            console.log('Después de escapar:', regex);
+
+            // Luego reemplazar variables con grupos de captura
+            const variables = {};
+            let varCounter = 0;
+
+            regex = regex.replace(/\{(\w+)\}/g, (match, varName) => {
+                variables[varName] = varCounter++;
+                console.log(`Variable encontrada: ${varName} en posición ${varCounter - 1}`);
+                return '([a-zA-Z0-9_]+)';
+            });
+
+            regex = '^\\s*' + regex + '\\s*$';
+
+            console.log('Regex final:', regex);
+            console.log('Variables mapeadas:', variables);
+
+            const regexPattern = new RegExp(regex);
+            const match = normalizedInput.match(regexPattern);
+
+            console.log('Match result:', match);
+            console.log('=== END DEBUG ===');
+
+            if (match) {
+                const extractedVars = {};
+                for (let [varName, index] of Object.entries(variables)) {
+                    extractedVars[varName] = match[index + 1];
+                }
+                return { isMatch: true, variables: extractedVars };
+            }
+
+            return { isMatch: false, variables: {} };
+        }
+
+        // Normalizar expresiones algebraicas
+        function normalizeAlgebraicExpression(expr) {
+            return expr
+                .replace(/\s+/g, '') // Quitar espacios
+                .replace(/²/g, '^2') // Convertir ² a ^2
+                .replace(/³/g, '^3') // Convertir ³ a ^3
+                .replace(/\*/g, '×') // Normalizar multiplicación
+                .replace(/\//g, '÷') // Normalizar división
+                .toLowerCase();
+        }
+
+        // Sustituir variables en el patrón
+        function substituteVariables(template, variables) {
+            let result = template;
+            for (let [varName, value] of Object.entries(variables)) {
+                const regex = new RegExp(`\\{${varName}\\}`, 'g');
+                result = result.replace(regex, value);
+            }
+            return result;
+        }
+
+        // Mostrar resultado en la interfaz
+        function displayResult(column, input, result) {
+            const resultSection = document.getElementById(`${column}-result`);
+            const outputElement = document.getElementById(`${column}-output`);
+
+            outputElement.textContent = result;
+            resultSection.style.display = 'block';
+        }
+
+        // Marcar como satisfactorio
+        function markAsSatisfactory(column) {
+            stats.satisfactoryConversions++;
+            updateMetrics();
+
+            // Feedback visual
+            showFeedback(`Marcado como satisfactorio`, 'success');
+
+            // Ocultar la sección de resultado después de un tiempo
+            setTimeout(() => {
+                document.getElementById(`${column}-result`).style.display = 'none';
+            }, 2000);
+        }
+
+        // Marcar para mejora
+        function markForImprovement(column) {
+            showFeedback('Marcado para mejora. Considera agregar un nuevo patrón.', 'warning');
+        }
+
+        // Mostrar diálogo para agregar patrón (función placeholder)
+        function showAddPatternDialog(column) {
+            alert(`Se abriría un diálogo para agregar un nuevo patrón para la columna ${column}.`);
+        }
+
+        // Cargar patrones desde un archivo JSON
+        function loadJSONFile() {
+            const fileInput = document.getElementById('json-file-input');
+            const file = fileInput.files[0];
+            if (!file) {
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    const parsedData = JSON.parse(e.target.result);
+                    if (parsedData.patterns) {
+                        loadPatterns(parsedData);
+                        stats.fileSize = (file.size / 1024).toFixed(2); // Tamaño en KB
+                        stats.lastUpdate = new Date().toLocaleString();
+                        updateMetrics();
+                        showFeedback('Patrones cargados exitosamente desde el archivo JSON', 'success');
+                    } else {
+                        alert('El archivo JSON no tiene el formato de patrones correcto.');
+                    }
+                } catch (error) {
+                    alert('Error al leer el archivo JSON: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // Manejar la selección de archivo
+        function handleFileSelection(event) {
+            const file = event.target.files[0];
+            const fileNameSpan = document.getElementById('file-name');
+            const loadButton = document.getElementById('load-json-btn');
+
+            if (file) {
+                fileNameSpan.textContent = file.name;
+                loadButton.disabled = false;
+            } else {
+                fileNameSpan.textContent = 'Ningún archivo seleccionado';
+                loadButton.disabled = true;
+            }
+        }
+
+        // Cargar patrones en la variable global
+        function loadPatterns(data) {
+            patternsData = data;
+            stats.totalPatterns = patternsData.patterns.length;
+            updateMetrics();
+        }
+
+        // Resetear a patrones por defecto
+        function resetToDefault() {
+            loadPatterns(defaultPatterns);
+            stats.fileSize = 0;
+            stats.lastUpdate = null;
+            updateMetrics();
+            showFeedback('Se han restaurado los patrones por defecto', 'info');
+        }
+
+        // Actualizar métricas en la interfaz
+        function updateMetrics() {
+            document.getElementById('total-patterns').textContent = stats.totalPatterns;
+            document.getElementById('file-size').textContent = `${stats.fileSize} KB`;
+            document.getElementById('conversions-count').textContent = stats.totalConversions;
+            const satisfactionRate = stats.totalConversions > 0 ? ((stats.satisfactoryConversions / stats.totalConversions) * 100).toFixed(1) : 0;
+            document.getElementById('satisfaction-rate').textContent = `${satisfactionRate}%`;
+            document.getElementById('last-update').textContent = stats.lastUpdate || '--';
+
+            // Actualizar complejidad promedio
+            const totalWords = patternsData.patterns.reduce((sum, p) => sum + p.natural.split(' ').length, 0);
+            const avgComplexity = stats.totalPatterns > 0 ? (totalWords / stats.totalPatterns).toFixed(2) : 0;
+            document.getElementById('avg-complexity').textContent = avgComplexity;
+        }
+
+        // Agregar al historial de conversiones
+        function addToHistory(type, input, output) {
+            conversionHistory.unshift({ type, input, output, timestamp: new Date() });
+            renderHistory();
+        }
+
+        // Renderizar el historial en la interfaz
+        function renderHistory() {
+            const historyList = document.getElementById('conversion-history');
+            historyList.innerHTML = '';
+
+            if (conversionHistory.length === 0) {
+                historyList.innerHTML = '<p class="no-history">No hay conversiones realizadas aún</p>';
+                return;
+            }
+
+            conversionHistory.forEach(item => {
+                const historyItem = document.createElement('div');
+                historyItem.classList.add('history-item');
+                historyItem.innerHTML = `
+                <p><strong>Tipo:</strong> ${item.type}</p>
+                <p><strong>Entrada:</strong> ${item.input}</p>
+                <p><strong>Salida:</strong> ${item.output}</p>
+                <p><strong>Hora:</strong> ${item.timestamp.toLocaleString()}</p>
+                <hr>
+            `;
+                historyList.appendChild(historyItem);
+            });
+        }
+
+        // Limpiar historial
+        function clearHistory() {
+            conversionHistory = [];
+            renderHistory();
+            showFeedback('Historial de conversiones limpiado', 'info');
+        }
+
+        // Exportar historial
+        function exportHistory() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(conversionHistory, null, 2));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", "historial_conversiones.json");
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+            showFeedback('Historial exportado como JSON', 'success');
+        }
+
+        // Función genérica para mostrar feedback al usuario
+        function showFeedback(message, type) {
+            console.log(`Feedback (${type}): ${message}`);
+        }
+    </script>
+</body></html>
